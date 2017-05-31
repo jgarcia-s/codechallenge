@@ -4,6 +4,7 @@ php_value display_errors 1
 # DO NOT REMOVE OR MODIFY THIS LINE AND THE LINES ABOVE HTID:1397016:
 
 RewriteEngine On
+RewriteRule ^(partida)($|/) - [L]
 RewriteBase /
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
