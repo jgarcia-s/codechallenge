@@ -103,6 +103,10 @@ class SequencePrinter
             for($j = 0; $j<count($this->map[0]); $j++){
                 if ($this->map[$i][$j] == '999'){
                     $board[$i][$j] = $this->getTile('X');
+                }else if ($this->map[$i][$j] == '300'){
+                    $board[$i][$j] = $this->getTile('A');
+                }else if ($this->map[$i][$j] == '2000'){
+                    $board[$i][$j] = $this->getTile('O');
                 }
 
           }
@@ -135,5 +139,6 @@ class SequencePrinter
         return str_pad($value, $this->getTileSize(), $this->getPadToken(), STR_PAD_LEFT);
     }
 }
+
 
 

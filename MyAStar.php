@@ -68,11 +68,29 @@ class MyAStar extends AStar
         $myStartNode = MyNode::fromNode($node);
         $myEndNode = MyNode::fromNode($adjacent);
 
-        if ($this->areAdjacent($myStartNode, $myEndNode)) {
-            return $this->terrainCost->getCost($myEndNode->getRow(), $myEndNode->getColumn());
+        switch($this->areAdjacent($myStartNode, $myEndNode)){
+            case 1:
+                $cost = $this->terrainCost->getCost($myEndNode->getRow(), $myEndNode->getColumn());
+                return $cost - 0.01;
+                break;
+            case 2:
+                $cost = $this->terrainCost->getCost($myEndNode->getRow(), $myEndNode->getColumn());
+                return $cost;
+                break;
+            case 3:
+                return TerrainCost::INFINITE;
+                break;
         }
 
-        return TerrainCost::INFINITE;
+
+            /*if((abs($myStartNode->getRow() - $myEndNode->getRow()) == 1) && (abs($myStartNode->getColumn() - $myEndNode->getColumn()) == 1))
+            {
+              return ($cost - 0.01);
+              //TerrainCost::INFINITE;
+            }else{
+              return $cost;
+            }*/
+        
     }
 
     /**
@@ -93,6 +111,19 @@ class MyAStar extends AStar
 
     private function areAdjacent(MyNode $a, MyNode $b)
     {
-        return abs($a->getRow() - $b->getRow()) <= 1 && abs($a->getColumn() - $b->getColumn()) <= 1;
+        $diffRow = abs($a->getRow() - $b->getRow());
+        $diffColumn = abs($a->getColumn() - $b->getColumn());
+      
+        if(($diffRow == 1 && $diffColumn == 0) || ($diffRow == 0 && $diffColumn == 1)){
+            return 1;
+        }else if($diffRow == 1 && $diffColumn == 1){
+            return 2;
+        }else{
+            return 3;
+        }
+      
+        //return abs($a->getRow() - $b->getRow()) <= 1 && abs($a->getColumn() - $b->getColumn()) <= 1;
     }
 }
+
+
