@@ -14,12 +14,11 @@ $jsonOutput = "Hola David :D";
 if($recurso == 'name'){
   $jsonOutput = 
 '{
-    "name": "jona2.garcia",
+    "name": "jona.garcia",
     "email": "jona.garcia@privalia.com"
 }';
 }else if($recurso == 'move'){
 
-  
   $body = json_decode(file_get_contents('php://input'));
     $maze = $body->maze;
 
@@ -29,23 +28,31 @@ if($recurso == 'name'){
   $goalY = $maze->goal->y;
 
 
-  if (apcu_exists($body->game->id)) {
-      $map = apcu_fetch($body->game->id);
+  if (apcu_exists('map-'.$body->game->id)) {
+      $map = apcu_fetch('map-'.$body->game->id);
       //var_dump($map);
   } else {
       $map = array();
 
       for ($i = 0; $i < $maze->size->height; $i++){
         $row = array();
-      for ($j = 0; $j < $maze->size->width; $j++){
-            if(($j == 0) || ($j == ($maze->size->width - 1)) || ($i == 0) || ($i == ($maze->size->height - 1))){
-                $row[] = 999;
-            }else{
-                $row[] = 1;
-            }
+        for ($j = 0; $j < $maze->size->width; $j++){
+              if(($j == 0) || ($j == ($maze->size->width - 1)) || ($i == 0) || ($i == ($maze->size->height - 1))){
+                  $row[] = 999;
+              }else{
+                  $row[] = 1;
+              }
+        }
+        $map[] = $row;
       }
-      $map[] = $row;
-    }
+  }
+  
+  if (apcu_exists('g-'.$body->game->id)) {
+    $logG = apcu_fetch('g-'.$body->game->id);
+    $areaG = apcu_fetch('area-'.$body->game->id);
+  }else{
+    $logG = array();
+    $areaG = null;
   }
 
   foreach($maze->walls as $wall){
@@ -54,27 +61,65 @@ if($recurso == 'name'){
 
   //goal
   $map[$maze->goal->y][$maze->goal->x] = 1;
-  //$map[6][3] = 999;
-  //$map[6][2] = 999;
 
-  //terrainCost[$row][$column] = 99
-  /*var_dump($map);
-  var_dump($goalX);
-  var_dump($goalY);
-  exit();*/
-
-  apcu_store($body->game->id, $map);
-
+  apcu_store('map-'.$body->game->id, $map);
+  
   //Marcamos los fantasmas
   $ghosts = $body->ghosts;
 
+  //Este será el mapa que guardaremos para la siguiente iteración
+  $tmpLogG = array();
+  for ($i = $body->player->area->y1; $i <= $body->player->area->y2; $i++){
+        $row = array();
+        for ($j = $body->player->area->x1; $j <= $body->player->area->x2; $j++){
+            $row[$j] = 0;
+        }
+        $tmpLogG[$i] = $row;
+  }
+  
+  //var_dump($tmpLogG);
+  
   foreach($ghosts as $ghost){
-      //var_dump($ghost);
-      $map[$ghost->y][$ghost->x] = 300;
-      $map[$ghost->y-1][$ghost->x] = 300;
-      $map[$ghost->y][$ghost->x-1] = 300;
-      $map[$ghost->y+1][$ghost->x] = 300;
-      $map[$ghost->y][$ghost->x+1] = 300;
+    //var_dump($ghost);
+
+    //Comprobamos si es un fantasma nuevo
+    /*for ($i = 1; $i < count($logG); $i++){
+        $row = array();
+        for ($j = 1; $j < count($logG[0]); $j++){
+            $nuevo = true;
+            if($logG[][])
+        }
+      }*/
+    
+    //var_dump($logG);
+    
+    if(!is_null($areaG)){
+    
+      if(($ghost->y > $areaG->y1) && ($ghost->y < $areaG->y2)){
+
+        if(($ghost->x > $areaG->x1) && ($ghost->x < $areaG->x2)){
+//var_dump($ghost);
+          //Miramos si lo tenemos fichado
+          $nuevo = max(
+                  $logG[$ghost->y-1][$ghost->x],
+                  $logG[$ghost->y+1][$ghost->x],
+                  $logG[$ghost->y][$ghost->x-1],
+                  $logG[$ghost->y][$ghost->x+1]
+          );
+          
+          $tmpLogG[$ghost->y][$ghost->x] = $nuevo + 1;
+          
+          //Este muerde
+          if($nuevo > 1){
+            $map[$ghost->y][$ghost->x] = 300;
+            $map[$ghost->y-1][$ghost->x] = 300;
+            $map[$ghost->y][$ghost->x-1] = 300;
+            $map[$ghost->y+1][$ghost->x] = 300;
+            $map[$ghost->y][$ghost->x+1] = 300;
+          }
+        }
+      }
+    }
   }
 
   //Comprobamos que no tenemos fantasmas cerca
@@ -363,6 +408,12 @@ if($recurso == 'name'){
       $move = 'no2';
         }
   }
+       
+  //Guardamos los fantasmas dentro del area
+  apcu_store('g-'.$body->game->id, $tmpLogG);
+       
+  //Guardamos el area
+  apcu_store('area-'.$body->game->id, $body->player->area);
 
   $printer = new SequencePrinter($map, $solution);
 
@@ -374,7 +425,7 @@ if($recurso == 'name'){
 
 
 
-  echo "\n";
+  //echo "\n";
     $jsonOutput = 
   '{
     "move": "'.$move.'"
